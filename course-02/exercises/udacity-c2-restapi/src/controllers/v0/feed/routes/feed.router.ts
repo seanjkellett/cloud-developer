@@ -18,13 +18,58 @@ router.get('/', async (req: Request, res: Response) => {
 
 //@TODO
 //Add an endpoint to GET a specific resource by Primary Key
+   // Get a greeting to a specific person
+  // to demonstrate routing parameters
+  // > try it {{host}}/persons/:the_name
+router.get( "/:id", requireAuth, async ( req: Request, res: Response ) => {
+      let { id } = req.params;
+
+      const item = await FeedItem.findByPk(id);
+
+      if (!item) {
+        return res.status(400)
+        .send(`no item found for id: ${id}`);
+      }
+      item.url = AWS.getGetSignedUrl(item.url);
+
+      return res.status(200)
+                .send(item);
+} );
 
 // update a specific resource
-router.patch('/:id', 
-    requireAuth, 
+router.patch("/:id", 
+
     async (req: Request, res: Response) => {
-        //@TODO try it yourself
-        res.send(500).send("not implemented")
+    
+    let { id } = req.params;
+    const caption = req.body.caption;
+    const fileName = req.body.url;
+
+    console.log(id)
+    // check Caption is valid
+    if (!id) {
+        return res.status(400).send({ message: 'ID is required or malformed' });
+    }
+    // check Caption is valid
+    if (!caption) {
+        return res.status(400).send({ message: 'Caption is required or malformed' });
+    }
+    console.log(caption)
+    // check Filename is valid
+    if (!fileName) {
+        return res.status(400).send({ message: 'File url is required' });
+    }
+    console.log(fileName)
+    FeedItem.update(
+        {caption: caption, url: fileName},
+        {where: {id: id} }
+    ).then(result =>
+        res.status(201).send(result)
+      )
+      .catch(err =>
+        res.status(401).send(err)
+      )
+    
 });
 
 
@@ -61,7 +106,7 @@ router.post('/',
             url: fileName
     });
 
-    const saved_item = await item.save();
+    const saved_item  = await item.save();
 
     saved_item.url = AWS.getGetSignedUrl(saved_item.url);
     res.status(201).send(saved_item);
