@@ -29,7 +29,7 @@ async function comparePasswords(plainTextPassword: string, hash: string): Promis
 function generateJWT(user: User): string {
     //@TODO Use jwt to create a new JWT Payload containing
 
-    return jwt.sign(user, config.jwt.secret); 
+    return jwt.sign(user.toJSON(), config.jwt.secret); 
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -38,7 +38,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
         return res.status(401).send({ message: 'No authorization headers.' });
     }
     
-
+    console.log(req.headers.authorization);
     const token_bearer = req.headers.authorization.split(' ');
     if(token_bearer.length != 2){
         return res.status(401).send({ message: 'Malformed token.' });
@@ -80,13 +80,14 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     // check that the password matches
-    //const authValid = await comparePasswords(password, user.password_hash)
+    const authValid = await comparePasswords(password, user.password_hash)
 
-    //if(!authValid) {
-    //    return res.status(401).send({ auth: false, message: 'Unauthorized' });
-    //}
+    if(!authValid) {
+        return res.status(401).send({ auth: false, message: 'Unauthorized' });
+    }
 
     // Generate JWT
+    const jwt = generateJWT(user);
 
     res.status(200).send({ auth: true, token: jwt, user: user.short()});
 });
@@ -112,24 +113,24 @@ router.post('/', async (req: Request, res: Response) => {
         return res.status(422).send({ auth: false, message: 'User may already exist' });
     }
 
-    //const password_hash = await generatePassword(plainTextPassword);
+    const password_hash = await generatePassword(plainTextPassword);
 
-    //const newUser = await new User({
-    //    email: email,
-    //    password_hash: password_hash
-    //});
+    const newUser = await new User({
+        email: email,
+        password_hash: password_hash
+    });
 
-    //let savedUser;
-    //try {
-    //    savedUser = await newUser.save();
-    //} catch (e) {
-    //    throw e;
-    //}
+    let savedUser;
+    try {
+        savedUser = await newUser.save();
+    } catch (e) {
+        throw e;
+    }
 
     // Generate JWT
-    //const jwt = generateJWT(savedUser);
+    const jwt = generateJWT(savedUser);
 
-    //res.status(201).send({token: jwt, user: savedUser.short()});
+    res.status(201).send({token: jwt, user: savedUser.short()});
 });
 
 router.get('/', async (req: Request, res: Response) => {
