@@ -22,7 +22,7 @@ import { runInNewContext } from 'vm';
 
     console.log(imageUrl)
     if ( !imageUrl) {
-      return res.status(400)
+      return res.status(422)
                 .send(`image_url is required`)
     }
     try {
