@@ -1,6 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import { runInNewContext } from 'vm';
 
 (async () => {
 
@@ -15,6 +16,32 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
   // @TODO1 IMPLEMENT A RESTFUL ENDPOINT
   // GET /filteredimage?image_url={{URL}}
+  app.get( "/filteredimage/", async ( req, res ) => {
+
+    const imageUrl = req.query.image_url
+
+    console.log(imageUrl)
+    if ( !imageUrl) {
+      return res.status(400)
+                .send(`image_url is required`)
+    }
+    try {
+       const filteredpath = await filterImageFromURL(imageUrl)
+    
+       res.sendFile(filteredpath, function (err) {
+        if (err) console.log('Error:', err);
+        else {
+          deleteLocalFiles()
+        }
+      });
+    }
+    catch(error)
+    {
+      return res.status(400).send(error)
+    }
+
+  } );
+
   // endpoint to filter an image from a public url.
   // IT SHOULD
   //    1
